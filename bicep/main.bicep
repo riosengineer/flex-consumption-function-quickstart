@@ -37,11 +37,11 @@ param nsgIntName string
 @description('The name of the user-assigned managed identity.')
 param umiName string
 
-@description('The name of the Azure Key Vault.')
-param keyVaultName string
+@description('The name of the Azure Key Vault. Must be 3-24 alphanumeric characters or hyphens, start/end with alphanumeric, and no consecutive hyphens.')
+param keyVaultName string = 'kv-${uniqueString(rgName, location)}'
 
 @description('The name of the storage account for the function app.')
-param functionStorageAccountName string
+param functionStorageAccountName string = 'st${uniqueString(rgName, location)}'
 
 @description('The name of the blob container in the function app storage account.')
 param functionStorageBlobContainerName string
@@ -64,8 +64,8 @@ param entity string
 @description('The workload or application name.')
 param workload string
 
-@description('The location short code for the environment (e.g., uks).')
-param locationOfEnv string
+@description('The location short code for the environment (e.g., uks for uksouth).')
+var locationOfEnv = toLower(substring(location, 0, 3))
 
 @description('The scale and concurrency configuration for the function app.')
 param scaleAndConcurrency object = {
@@ -126,6 +126,15 @@ param timeNow string = utcNow('yyyy-MM-ddTHH:mm')
 @description('The name of the Log Analytics workspace.')
 param lawName string
 
+module modResourceGroup 'br/public:avm/res/resources/resource-group:0.4.1' = {
+  name: '${uniqueString(deployment().name, location)}-${rgName}'
+  params: {
+    name: rgName
+    location: location
+    tags: union(tags, { updatedOn: timeNow })
+  }
+}
+
 // MARK: Private DNS Zones
 var privateDnsZones = [
   'privatelink.vaultcore.azure.net' // 0
@@ -145,15 +154,6 @@ module modPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
     modResourceGroup
   ]
 }]
-
-module modResourceGroup 'br/public:avm/res/resources/resource-group:0.4.1' = {
-  name: '${uniqueString(deployment().name, location)}-${rgName}'
-  params: {
-    name: rgName
-    location: location
-    tags: union(tags, { updatedOn: timeNow })
-  }
-}
 
 // MARK: Key Vault
 module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
