@@ -34,12 +34,6 @@ param nsgPeName string
 @description('The name of the network security group for the integration subnet.')
 param nsgIntName string
 
-@description('The name of the user-assigned managed identity.')
-param umiName string
-
-@description('The name of the Azure Key Vault. Must be 3-24 alphanumeric characters or hyphens, start/end with alphanumeric, and no consecutive hyphens.')
-param keyVaultName string = 'kv-${uniqueString(rgName, location)}'
-
 @description('The name of the storage account for the function app.')
 param functionStorageAccountName string = 'st${uniqueString(rgName, location)}'
 
@@ -137,10 +131,9 @@ module modResourceGroup 'br/public:avm/res/resources/resource-group:0.4.1' = {
 
 // MARK: Private DNS Zones
 var privateDnsZones = [
-  'privatelink.vaultcore.azure.net' // 0
-  'privatelink.azurewebsites.net' // 1
-  'privatelink.file.core.windows.net' // 2
-  'privatelink.blob.core.windows.net' // 3
+  'privatelink.azurewebsites.net' // 0
+  'privatelink.file.core.windows.net' // 1
+  'privatelink.blob.core.windows.net' // 2
 ]
 
 module modPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [for privateDnsZone in privateDnsZones: {
@@ -154,51 +147,6 @@ module modPrivateDnsZones 'br/public:avm/res/network/private-dns-zone:0.7.1' = [
     modResourceGroup
   ]
 }]
-
-// MARK: Key Vault
-module keyVault 'br/public:avm/res/key-vault/vault:0.12.1' = {
-  name: '${uniqueString(deployment().name, location)}-${keyVaultName}'
-  scope: resourceGroup(rgName)
-  params: {
-    name: keyVaultName
-    location: location
-    sku: 'standard'
-    enableSoftDelete: true
-    enableRbacAuthorization: true
-    enablePurgeProtection: true
-    networkAcls: {
-      defaultAction: 'Deny'
-      bypass: 'AzureServices'
-      ipRules: []
-    }
-    privateEndpoints: [
-      {
-        name: 'pe-${locationOfEnv}-${env}-${entity}-${workload}-vault'
-        customNetworkInterfaceName: 'pe-${locationOfEnv}-${env}-${entity}-${workload}-vault-nic'
-        subnetResourceId: vNet.outputs.subnetResourceIds[0]
-        tags: union(tags, { createdOn: timeNow })
-        service: 'vault'
-        privateDnsZoneGroup: {
-          privateDnsZoneGroupConfigs: [
-            {
-              privateDnsZoneResourceId: modPrivateDnsZones[0].outputs.resourceId
-            }
-          ]
-        }
-      }
-    ]
-    roleAssignments: [
-      {
-        principalId: umi.outputs.principalId
-        roleDefinitionIdOrName: 'Key Vault Secrets User'
-      }
-    ]
-    tags: union(tags, { updatedOn: timeNow })
-  }
-  dependsOn: [
-    modResourceGroup
-  ]
-}
 
 // MARK: Virtual Network Links
 module privateDNSZoneLink 'br/public:avm/ptn/network/private-link-private-dns-zones:0.4.0' = [
@@ -321,9 +269,6 @@ module functionStorageAccount 'br/public:avm/res/storage/storage-account:0.19.0'
     allowSharedKeyAccess: false
     managedIdentities: {
       systemAssigned: true
-      userAssignedResourceIds: [
-        umi.outputs.resourceId
-      ]
     }
     networkAcls: {
       bypass: 'AzureServices'
@@ -347,11 +292,11 @@ module functionStorageAccount 'br/public:avm/res/storage/storage-account:0.19.0'
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: modPrivateDnsZones[3].outputs.resourceId
+              privateDnsZoneResourceId: modPrivateDnsZones[2].outputs.resourceId
             }
           ]
         }
-        tags: union(tags, { createdOn: timeNow })
+        tags: union(tags, { updatedOn: timeNow })
       }
       {
         name: 'pe-${locationOfEnv}-${env}-${entity}-${workload}-file'
@@ -361,31 +306,14 @@ module functionStorageAccount 'br/public:avm/res/storage/storage-account:0.19.0'
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: modPrivateDnsZones[2].outputs.resourceId
+              privateDnsZoneResourceId: modPrivateDnsZones[1].outputs.resourceId
             }
           ]
         }
-        tags: union(tags, { createdOn: timeNow })
+        tags: union(tags, { updatedOn: timeNow })
       }
     ]
-    secretsExportConfiguration: {
-      keyVaultResourceId: keyVault.outputs.resourceId
-      connectionString1Name: 'connectionString1'
-      connectionString2Name: 'connectionString2'
-     }
      tags: union(tags, { updatedOn: timeNow })
-  }
-  dependsOn: [
-    modResourceGroup
-  ]
-}
-
-module umi 'br/public:avm/res/managed-identity/user-assigned-identity:0.4.1' = {
-  name: '${uniqueString(deployment().name, location)}-${umiName}'
-  scope: resourceGroup(rgName)
-  params: {
-    name: umiName
-    tags: union(tags, { updatedOn: timeNow })
   }
   dependsOn: [
     modResourceGroup
@@ -427,16 +355,12 @@ module functionAppFlex 'br/public:avm/res/web/site:0.15.1' = {
     virtualNetworkSubnetId: vNet.outputs.subnetResourceIds[1]
     vnetRouteAllEnabled: true
     appInsightResourceId: functionAppInsights.outputs.resourceId
-    keyVaultAccessIdentityResourceId: umi.outputs.resourceId
     storageAccountResourceId: functionStorageAccount.outputs.resourceId
     storageAccountUseIdentityAuthentication: true
     storageAccountRequired: true
-    publicNetworkAccess: 'Enabled'
+    publicNetworkAccess: 'Disabled'
     managedIdentities: {
       systemAssigned: true
-      userAssignedResourceIds: [
-        umi.outputs.resourceId
-      ]
     }
     functionAppConfig: {
       deployment: {
@@ -495,7 +419,7 @@ module functionAppFlex 'br/public:avm/res/web/site:0.15.1' = {
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
             {
-              privateDnsZoneResourceId: modPrivateDnsZones[1].outputs.resourceId
+              privateDnsZoneResourceId: modPrivateDnsZones[0].outputs.resourceId
             }
           ]
         }

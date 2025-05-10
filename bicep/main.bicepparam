@@ -26,7 +26,6 @@ param nsgPeName = 'nsg-pe'
 param nsgIntName = 'nsg-int'
 
 // Function App
-param umiName = 'umi-flex'
 param functionStorageBlobContainerName = 'flex-container' // The deployment of the runtime is stored in this Blob container 
 param functionAppPlanName = 'asp-func'
 param functionAppName = 'func-flex-rios'
