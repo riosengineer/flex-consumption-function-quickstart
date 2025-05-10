@@ -25,6 +25,8 @@ The function is connected to storage through managed identity and RBAC. In addit
 - ✅ AlwaysOn capability so you do not suffer from cold start issues.
 - ✅ Supports managed identity connections for full platform functionality.
 
+What it can't do (right now): Deployment Slots & Key Vault/App Config access via App Settings (only possible directly via code calls).
+
 Read more about Flex Consumtpion here: https://learn.microsoft.com/en-gb/azure/azure-functions/flex-consumption-plan
 
 ## 🚀 Deploy

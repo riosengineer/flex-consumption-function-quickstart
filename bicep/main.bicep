@@ -376,6 +376,7 @@ module functionAppFlex 'br/public:avm/res/web/site:0.15.1' = {
       runtime: runtime
     }
     appSettingsKeyValuePairs: {
+      // All Managed Identity access 😎
       APPLICATIONINSIGHTS_AUTHENTICATION_STRING: 'Authorization=AAD'
       APPLICATIONINSIGHTS_CONNECTION_STRING: functionAppInsights.outputs.connectionString
       AzureWebJobsStorage__accountName: functionStorageAccountName
