@@ -210,7 +210,7 @@ module vNet 'br/public:avm/res/network/virtual-network:0.6.1' = {
         networkSecurityGroupResourceId: nsgPe.outputs.resourceId
       }
       {
-        name: integrationSubnetName //1
+        name: integrationSubnetName // 1
         addressPrefix: integrationSubnetPrefix
         networkSecurityGroupResourceId: nsgInt.outputs.resourceId
         delegation: 'Microsoft.App/environments' // Flex Integration delegation req
