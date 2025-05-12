@@ -4,8 +4,10 @@ using 'main.bicep'
 param rgName = 'rg-flex-function-demo'
 param location = 'uksouth'
 param env = 'demo'
-param entity = 'rios'
-param workload = 'flex'
+param blobPrivateEndpointName = 'pe-blob'
+param filePrivateEndpointName = 'pe-file'
+param functionPrivateEndpointName = 'pe-func'
+
 param tags = {
   Demo: 'Flex Consumption Function'
   Networking: 'Private'

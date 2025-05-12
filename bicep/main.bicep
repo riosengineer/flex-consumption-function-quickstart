@@ -52,14 +52,10 @@ param applicationInsightsFuncName string
 @description('The environment name (e.g., dev, test, prod).')
 param env string
 
-@description('The entity or business unit name.')
-param entity string
-
-@description('The workload or application name.')
-param workload string
-
-@description('The location short code for the environment (e.g., uks for uksouth).')
-var locationOfEnv = toLower(substring(location, 0, 3))
+@description('The name of the private endpoints for the function app.')
+param functionPrivateEndpointName string 
+param filePrivateEndpointName string
+param blobPrivateEndpointName string
 
 @description('The scale and concurrency configuration for the function app.')
 param scaleAndConcurrency object = {
@@ -285,8 +281,8 @@ module functionStorageAccount 'br/public:avm/res/storage/storage-account:0.19.0'
     }
     privateEndpoints: [
       {
-        name: 'pe-${locationOfEnv}-${env}-${entity}-${workload}-blob'
-        customNetworkInterfaceName: 'pe-${locationOfEnv}-${env}-${entity}-${workload}-blob-nic'
+        name: blobPrivateEndpointName
+        customNetworkInterfaceName: '${blobPrivateEndpointName}-nic'
         subnetResourceId: vNet.outputs.subnetResourceIds[0]
         service: 'blob'
         privateDnsZoneGroup: {
@@ -299,8 +295,8 @@ module functionStorageAccount 'br/public:avm/res/storage/storage-account:0.19.0'
         tags: union(tags, { updatedOn: timeNow })
       }
       {
-        name: 'pe-${locationOfEnv}-${env}-${entity}-${workload}-file'
-        customNetworkInterfaceName: 'pe-${locationOfEnv}-${env}-${entity}-${workload}-file-nic'
+        name: filePrivateEndpointName
+        customNetworkInterfaceName: '${filePrivateEndpointName}-nic'
         subnetResourceId: vNet.outputs.subnetResourceIds[0]
         service: 'file'
         privateDnsZoneGroup: {
@@ -414,8 +410,8 @@ module functionAppFlex 'br/public:avm/res/web/site:0.15.1' = {
     }
     privateEndpoints: [
       {
-        name: 'pe-${locationOfEnv}-${env}-${entity}-${workload}-func'
-        customNetworkInterfaceName: 'pe-${locationOfEnv}-${env}-${entity}-${workload}-func-nic'
+        name: functionPrivateEndpointName
+        customNetworkInterfaceName: '${functionPrivateEndpointName}-nic'
         subnetResourceId: vNet.outputs.subnetResourceIds[0]
         privateDnsZoneGroup: {
           privateDnsZoneGroupConfigs: [
