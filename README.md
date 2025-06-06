@@ -2,6 +2,15 @@
 
 This repository contains a Bicep template, written entirely with Azure Verified Modules public registry modules to demo / boiler plate a template to demo Azure Function - Consumption Plan with private networking. 
 
+> **💡 Note:**  
+> The `Microsoft.App` resource provider must be registered in your Azure subscription **before** deploying.
+>  
+> You can register it using the Azure CLI:  
+> 
+> ```bash
+> az provider register --namespace Microsoft.App
+> ```
+
 The Bicep template will deploy: 
 
 - Resource Group which will contain:
